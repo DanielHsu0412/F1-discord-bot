@@ -296,19 +296,32 @@ def fetch_driver_standings(year: Optional[int] = None) -> list[DriverStanding]:
         return []
 
     session_key = latest_race.session_key
+    logger.info(
+        f"[drivers standings] 使用 session_key={session_key}, "
+        f"meeting={latest_race.meeting_name}, "
+        f"race_start={latest_race.date_start.isoformat()}"
+    )
 
     standings_raw = _fetch_json(
         f"{OPENF1_BASE_URL}/championship_drivers",
         params={"session_key": session_key}
     )
+
+    logger.info(f"[drivers standings] championship_drivers raw type={type(standings_raw).__name__}")
+    logger.info(f"[drivers standings] championship_drivers raw={standings_raw}")
+
     if not standings_raw:
-        logger.warning("championship_drivers 回傳空資料")
+        logger.warning("[drivers standings] championship_drivers 回傳空資料")
         return []
 
     drivers_raw = _fetch_json(
         f"{OPENF1_BASE_URL}/drivers",
         params={"session_key": session_key}
     ) or []
+
+    logger.info(f"[drivers standings] drivers raw count={len(drivers_raw)}")
+    if drivers_raw:
+        logger.info(f"[drivers standings] first driver sample={drivers_raw[0]}")
 
     driver_map: dict[int, dict] = {
         int(d.get("driver_number", 0)): d for d in drivers_raw
@@ -319,11 +332,7 @@ def fetch_driver_standings(year: Optional[int] = None) -> list[DriverStanding]:
         driver_number = int(row.get("driver_number", 0))
         info = driver_map.get(driver_number, {})
 
-        full_name = (
-            info.get("full_name")
-            or f"Driver #{driver_number}"
-        )
-
+        full_name = info.get("full_name") or f"Driver #{driver_number}"
         team_name = info.get("team_name") or "Unknown Team"
 
         standings.append(DriverStanding(
@@ -335,6 +344,7 @@ def fetch_driver_standings(year: Optional[int] = None) -> list[DriverStanding]:
         ))
 
     standings.sort(key=lambda x: x.position)
+    logger.info(f"[drivers standings] parsed standings count={len(standings)}")
     return standings
 
 
@@ -345,13 +355,22 @@ def fetch_team_standings(year: Optional[int] = None) -> list[TeamStanding]:
         return []
 
     session_key = latest_race.session_key
+    logger.info(
+        f"[constructors standings] 使用 session_key={session_key}, "
+        f"meeting={latest_race.meeting_name}, "
+        f"race_start={latest_race.date_start.isoformat()}"
+    )
 
     standings_raw = _fetch_json(
         f"{OPENF1_BASE_URL}/championship_teams",
         params={"session_key": session_key}
     )
+
+    logger.info(f"[constructors standings] championship_teams raw type={type(standings_raw).__name__}")
+    logger.info(f"[constructors standings] championship_teams raw={standings_raw}")
+
     if not standings_raw:
-        logger.warning("championship_teams 回傳空資料")
+        logger.warning("[constructors standings] championship_teams 回傳空資料")
         return []
 
     standings: list[TeamStanding] = []
@@ -363,6 +382,7 @@ def fetch_team_standings(year: Optional[int] = None) -> list[TeamStanding]:
         ))
 
     standings.sort(key=lambda x: x.position)
+    logger.info(f"[constructors standings] parsed standings count={len(standings)}")
     return standings
 
 
