@@ -241,7 +241,7 @@ async def cmd_results(message: discord.Message) -> None:
         lines = []
         for r in results:
             lines.append(
-                f"**{r['grand_prix']}** — {r['winner']} ｜{r['team']}"
+                f"**{r.grand_prix}** — {r.winner} ｜{r.team}"
             )
 
         embed.description = "\n".join(lines[:20])
