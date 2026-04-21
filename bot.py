@@ -161,7 +161,6 @@ async def cmd_next(message: discord.Message) -> None:
         next_meeting = upcoming[0]
         embed = build_pre_race_embed(next_meeting)
         await message.channel.send(embed=embed)
-        await message.reply(f"👆 {next_meeting.meeting_name} 賽程預覽（此次不記錄為已發送）")
 
     except Exception as e:
         logger.error(f"cmd_next 錯誤：{e}")
