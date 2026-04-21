@@ -170,59 +170,23 @@ async def cmd_next(message: discord.Message) -> None:
 
 
 async def cmd_drivers(message: discord.Message) -> None:
-    """顯示最新車手積分榜。"""
-    try:
-        standings = fetch_driver_standings()
-        if not standings:
-            await message.reply("⚠️ Could not fetch drivers' standings.")
-            return
-
-        embed = discord.Embed(
-            title="🏆 2026 Drivers' Standings",
-            color=discord.Color.red(),
-        )
-
-        lines = []
-        for s in standings[:10]:
-            pts = int(s.points) if float(s.points).is_integer() else s.points
-            lines.append(
-                f"**P{s.position}** {s.full_name} — {pts} pts ｜{s.team_name}"
-            )
-
-        embed.description = "\n".join(lines)
-        embed.set_footer(text="F1 Taiwan Bot")
-        await message.channel.send(embed=embed)
-
-    except Exception as e:
-        logger.error(f"cmd_drivers 錯誤：{e}", exc_info=True)
-        await message.reply(f"❌ Failed to get drivers' standings: {e}")
+    embed = discord.Embed(
+        title="🏎️ Drivers' Standings",
+        description="👉 [Click here to view latest standings](https://www.formula1.com/en/results.html/2026/drivers.html)",
+        color=discord.Color.red(),
+    )
+    embed.set_footer(text="Data from Formula1.com")
+    await message.channel.send(embed=embed)
 
 
 async def cmd_constructors(message: discord.Message) -> None:
-    """顯示最新車隊積分榜。"""
-    try:
-        standings = fetch_team_standings()
-        if not standings:
-            await message.reply("⚠️ Could not fetch constructors' standings.")
-            return
-
-        embed = discord.Embed(
-            title="🏗️ 2026 Teams' Standings",
-            color=discord.Color.blue(),
-        )
-
-        lines = []
-        for s in standings[:10]:
-            pts = int(s.points) if float(s.points).is_integer() else s.points
-            lines.append(f"**P{s.position}** {s.team_name} — {pts} pts")
-
-        embed.description = "\n".join(lines)
-        embed.set_footer(text="F1 Taiwan Bot")
-        await message.channel.send(embed=embed)
-
-    except Exception as e:
-        logger.error(f"cmd_constructors 錯誤：{e}", exc_info=True)
-        await message.reply(f"❌ Failed to get constructors' standings: {e}")
+    embed = discord.Embed(
+        title="🏁 Constructors' Standings",
+        description="👉 [Click here to view latest standings](https://www.formula1.com/en/results.html/2026/team.html)",
+        color=discord.Color.blue(),
+    )
+    embed.set_footer(text="Data from Formula1.com")
+    await message.channel.send(embed=embed)
 
 
 async def cmd_results(message: discord.Message) -> None:
