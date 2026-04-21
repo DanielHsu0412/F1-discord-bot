@@ -1,10 +1,10 @@
-# 🏁 F1 Taiwan Info Discord Bot
+#  F1 Taiwan Info Discord Bot
 
 自動整合 Formula 1 賽事資訊，以**台灣時間（GMT+8）**在 Discord 頻道發佈清晰易讀的 Embed 公告，專為台灣車迷設計。
 
 ---
 
-## ✨ 功能（MVP 版本）
+##  功能（MVP 版本）
 
 | 功能 | 說明 |
 |------|------|
@@ -16,7 +16,7 @@
 
 ---
 
-## 📁 專案結構
+##  專案結構
 
 ```
 f1-taiwan-bot/
@@ -35,8 +35,6 @@ f1-taiwan-bot/
 ```
 
 ---
-
-## 🚀 快速開始
 
 ### 1. 建立 Discord Bot
 
@@ -63,7 +61,7 @@ DISCORD_TOKEN=你的Bot_Token
 CHANNEL_ID=要發送公告的頻道ID
 ```
 
-> 💡 **如何取得頻道 ID？**  
+>  **如何取得頻道 ID？**  
 > Discord → 設定 → 進階 → 開啟開發者模式  
 > 右鍵頻道 → 複製頻道 ID
 
@@ -81,13 +79,13 @@ python bot.py
 
 啟動後會看到：
 ```
-✅ Bot 已登入：F1TaiwanBot#1234 (ID: ...)
-⏱️ 排程啟動，每 5 分鐘檢查一次
+ Bot 已登入：F1TaiwanBot#1234 (ID: ...)
+ 排程啟動，每 5 分鐘檢查一次
 ```
 
 ---
 
-## 🎨 Embed 範例
+##  Embed 範例
 
 ### 賽前總通知（一般週末）
 
@@ -201,3 +199,4 @@ CHECK_INTERVAL_MINUTES = 5      # 排程輪詢間隔（預設 5 分鐘）
 ## 📄 License
 
 MIT License — 自由使用、修改與散布。
+
