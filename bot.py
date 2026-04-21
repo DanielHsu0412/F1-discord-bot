@@ -11,11 +11,14 @@ bot.py — F1 Taiwan Info Discord Bot 主程式
   2. pip install -r requirements.txt
   3. python bot.py
 
-管理員指令（需要管理員身份）：
-  !f1 status    — 顯示 Bot 狀態與下一站資訊
-  !f1 next      — 顯示下一站完整賽程 Embed（立即發送，不記錄）
-  !f1 force     — 強制重新發送下一站賽前通知（會覆蓋記錄）
-  !f1 log       — 顯示已發送記錄
+指令：
+  公開指令：
+    !f1 status    — 顯示下一站資訊
+    !f1 next      — 顯示下一站完整賽程 Embed（立即發送，不記錄）
+
+  管理員指令：
+    !f1 force     — 強制重新發送下一站賽前通知（會覆蓋記錄）
+    !f1 log       — 顯示已發送記錄
 """
 
 import logging
@@ -41,7 +44,7 @@ logger = logging.getLogger(__name__)
 # ── Discord Client 設定 ───────────────────────────────────────
 
 intents = discord.Intents.default()
-intents.message_content = True  # 需要讀取訊息內容（用於管理員指令）
+intents.message_content = True  # 需要讀取訊息內容（用於文字指令）
 
 client = discord.Client(intents=intents)
 
@@ -62,7 +65,7 @@ async def on_ready() -> None:
 
 @client.event
 async def on_message(message: discord.Message) -> None:
-    """處理管理員指令。"""
+    """處理 Bot 指令。"""
     # 忽略 Bot 自身訊息
     if message.author.bot:
         return
@@ -71,56 +74,70 @@ async def on_message(message: discord.Message) -> None:
     if not message.content.startswith("!f1"):
         return
 
-    # 只有管理員可用
-    if not message.author.guild_permissions.administrator:
-        await message.reply("❌ 此指令僅限管理員使用。")
+    parts = message.content.strip().split()
+    command = parts[1].lower() if len(parts) > 1 else "help"
+
+    # 所有人可用的公開指令
+    public_commands = {"status", "next", "help"}
+
+    # 僅管理員可用的指令
+    admin_commands = {"force", "log"}
+
+    if command in public_commands:
+        if command == "status":
+            await cmd_status(message)
+        elif command == "next":
+            await cmd_next(message)
+        else:
+            await message.reply(
+                "**F1 Taiwan Bot 指令**\n"
+                "`!f1 status` — 查看下一站資訊\n"
+                "`!f1 next`   — 立即預覽下一站賽程 Embed\n"
+                "`!f1 force`  — 強制重送下一站賽前通知（管理員）\n"
+                "`!f1 log`    — 查看已發送記錄（管理員）"
+            )
         return
 
-    parts = message.content.strip().split()
-    command = parts[1] if len(parts) > 1 else "help"
+    if command in admin_commands:
+        if not message.author.guild_permissions.administrator:
+            await message.reply("❌ 此指令僅限管理員使用。")
+            return
 
-    if command == "status":
-        await cmd_status(message)
-    elif command == "next":
-        await cmd_next(message)
-    elif command == "force":
-        await cmd_force(message)
-    elif command == "log":
-        await cmd_log(message)
-    else:
-        await message.reply(
-            "**F1 Taiwan Bot 指令**\n"
-            "`!f1 status` — Bot 狀態與下一站資訊\n"
-            "`!f1 next`   — 立即預覽下一站賽程 Embed\n"
-            "`!f1 force`  — 強制重送下一站賽前通知\n"
-            "`!f1 log`    — 查看已發送記錄"
-        )
+        if command == "force":
+            await cmd_force(message)
+        elif command == "log":
+            await cmd_log(message)
+        return
+
+    await message.reply(
+        "**F1 Taiwan Bot 指令**\n"
+        "`!f1 status` — 查看下一站資訊\n"
+        "`!f1 next`   — 立即預覽下一站賽程 Embed\n"
+        "`!f1 force`  — 強制重送下一站賽前通知（管理員）\n"
+        "`!f1 log`    — 查看已發送記錄（管理員）"
+    )
 
 
-# ── 管理員指令實作 ────────────────────────────────────────────
+# ── 指令實作 ─────────────────────────────────────────────────
 
 async def cmd_status(message: discord.Message) -> None:
-    """顯示 Bot 運作狀態與下一站資訊。"""
+    """顯示下一站資訊。"""
     try:
         meetings = get_current_year_meetings()
         upcoming = get_upcoming_meetings(meetings)
-        now_taipei = datetime.now(tz=timezone.utc)
+        now_utc = datetime.now(tz=timezone.utc)
 
         if not upcoming:
-            await message.reply("✅ Bot 運作中\n賽季已結束或無資料。")
+            await message.reply("本季賽程已結束，或目前無可用資料。")
             return
 
         next_meeting = upcoming[0]
         race = next_meeting.race_session
-        days_left = (race.date_start - now_taipei).days if race else "?"
-
+        days_left = (race.date_start - now_utc).days if race else "?"
         sprint_label = "⚡ Sprint 週末" if next_meeting.is_sprint_weekend else "🔵 一般週末"
         race_tw = format_time(to_taipei(race.date_start)) if race else "未知"
 
         await message.reply(
-            f"✅ **Bot 運作中**\n"
-            f"📡 監聽頻道：<#{CHANNEL_ID}>\n"
-            f"⏱️ 排程間隔：{CHECK_INTERVAL_MINUTES} 分鐘\n\n"
             f"**下一站：{next_meeting.meeting_name}**\n"
             f"{sprint_label}\n"
             f"🏁 正賽（台灣時間）：{race_tw}\n"
@@ -194,7 +211,7 @@ async def cmd_log(message: discord.Message) -> None:
         return
 
     lines = [f"📋 **已發送記錄（共 {len(all_records)} 筆）**"]
-    for key, value in list(all_records.items())[-15:]:  # 只顯示最近 15 筆
+    for key, value in list(all_records.items())[-15:]:
         lines.append(f"`{key}` → {value}")
 
     await message.reply("\n".join(lines))
