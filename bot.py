@@ -1,24 +1,18 @@
 """
 bot.py — F1 Taiwan Info Discord Bot 主程式
 
-功能（MVP 版本）：
-  ✅ 賽前總通知 Embed（每站大獎賽前 3 天自動發送）
-  ✅ 台灣時間轉換（Asia/Taipei GMT+8）
-  ✅ Sprint / 非 Sprint 週末自動判斷
+公開指令：
+  !f1 status
+  !f1 next
+  !f1 drivers
+  !f1 constructors
+  !f1 teams
+  !f1 results
+  !f1 help
 
-使用方式：
-  1. 複製 .env.example → .env，填入 DISCORD_TOKEN 與 CHANNEL_ID
-  2. pip install -r requirements.txt
-  3. python bot.py
-
-指令：
-  公開指令：
-    !f1 status    — 顯示下一站資訊
-    !f1 next      — 顯示下一站完整賽程 Embed（立即發送，不記錄）
-
-  管理員指令：
-    !f1 force     — 強制重新發送下一站賽前通知（會覆蓋記錄）
-    !f1 log       — 顯示已發送記錄
+管理員指令：
+  !f1 force
+  !f1 log
 """
 
 import logging
@@ -35,7 +29,13 @@ from config import (
     validate_config,
 )
 from modules.scheduler import check_and_send_notifications, force_send_pre_race, get_sent_log
-from modules.f1_data import get_current_year_meetings, get_upcoming_meetings
+from modules.f1_data import (
+    get_current_year_meetings,
+    get_upcoming_meetings,
+    fetch_driver_standings,
+    fetch_team_standings,
+    fetch_race_results_history,
+)
 from modules.embed_builder import build_pre_race_embed
 from modules.timezone_utils import to_taipei, format_time
 
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 # ── Discord Client 設定 ───────────────────────────────────────
 
 intents = discord.Intents.default()
-intents.message_content = True  # 需要讀取訊息內容（用於文字指令）
+intents.message_content = True
 
 client = discord.Client(intents=intents)
 
@@ -57,7 +57,6 @@ async def on_ready() -> None:
     logger.info(f"✅ Bot 已登入：{client.user} (ID: {client.user.id})")
     logger.info(f"📡 監聽頻道 ID：{CHANNEL_ID}")
 
-    # 啟動定時排程
     if not check_loop.is_running():
         check_loop.start()
         logger.info(f"⏱️ 排程啟動，每 {CHECK_INTERVAL_MINUTES} 分鐘檢查一次")
@@ -66,21 +65,16 @@ async def on_ready() -> None:
 @client.event
 async def on_message(message: discord.Message) -> None:
     """處理 Bot 指令。"""
-    # 忽略 Bot 自身訊息
     if message.author.bot:
         return
 
-    # 只回應 !f1 開頭的指令
     if not message.content.startswith("!f1"):
         return
 
     parts = message.content.strip().split()
     command = parts[1].lower() if len(parts) > 1 else "help"
 
-    # 所有人可用的公開指令
-    public_commands = {"status", "next", "help"}
-
-    # 僅管理員可用的指令
+    public_commands = {"status", "next", "drivers", "constructors", "teams", "results", "help"}
     admin_commands = {"force", "log"}
 
     if command in public_commands:
@@ -88,14 +82,14 @@ async def on_message(message: discord.Message) -> None:
             await cmd_status(message)
         elif command == "next":
             await cmd_next(message)
+        elif command == "drivers":
+            await cmd_drivers(message)
+        elif command in {"constructors", "teams"}:
+            await cmd_constructors(message)
+        elif command == "results":
+            await cmd_results(message)
         else:
-            await message.reply(
-                "**F1 Taiwan Bot 指令**\n"
-                "`!f1 status` — 查看下一站資訊\n"
-                "`!f1 next`   — 立即預覽下一站賽程 Embed\n"
-                "`!f1 force`  — 強制重送下一站賽前通知（管理員）\n"
-                "`!f1 log`    — 查看已發送記錄（管理員）"
-            )
+            await cmd_help(message)
         return
 
     if command in admin_commands:
@@ -109,16 +103,24 @@ async def on_message(message: discord.Message) -> None:
             await cmd_log(message)
         return
 
-    await message.reply(
-        "**F1 Taiwan Bot 指令**\n"
-        "`!f1 status` — 查看下一站資訊\n"
-        "`!f1 next`   — 立即預覽下一站賽程 Embed\n"
-        "`!f1 force`  — 強制重送下一站賽前通知（管理員）\n"
-        "`!f1 log`    — 查看已發送記錄（管理員）"
-    )
+    await cmd_help(message)
 
 
 # ── 指令實作 ─────────────────────────────────────────────────
+
+async def cmd_help(message: discord.Message) -> None:
+    await message.reply(
+        "**F1 Taiwan Bot Commands**\n"
+        "`!f1 status`        — Show next race info\n"
+        "`!f1 next`          — Preview next race weekend embed\n"
+        "`!f1 drivers`       — Show latest drivers' standings\n"
+        "`!f1 constructors`  — Show latest constructors' standings\n"
+        "`!f1 teams`         — Same as constructors\n"
+        "`!f1 results`       — Show 2026 race winners so far\n"
+        "`!f1 force`         — Force send next race notification (admin)\n"
+        "`!f1 log`           — Show sent logs (admin)"
+    )
+
 
 async def cmd_status(message: discord.Message) -> None:
     """顯示下一站資訊。"""
@@ -128,24 +130,24 @@ async def cmd_status(message: discord.Message) -> None:
         now_utc = datetime.now(tz=timezone.utc)
 
         if not upcoming:
-            await message.reply("本季賽程已結束，或目前無可用資料。")
+            await message.reply("No upcoming Grand Prix found.")
             return
 
         next_meeting = upcoming[0]
         race = next_meeting.race_session
         days_left = (race.date_start - now_utc).days if race else "?"
-        sprint_label = "⚡ Sprint 週末" if next_meeting.is_sprint_weekend else "🔵 一般週末"
-        race_tw = format_time(to_taipei(race.date_start)) if race else "未知"
+        sprint_label = "⚡ Sprint weekend" if next_meeting.is_sprint_weekend else "🔵 Normal weekend"
+        race_tw = format_time(to_taipei(race.date_start)) if race else "Unknown"
 
         await message.reply(
-            f"**下一站：{next_meeting.meeting_name}**\n"
+            f"**Next race: {next_meeting.meeting_name}**\n"
             f"{sprint_label}\n"
-            f"🏁 正賽（台灣時間）：{race_tw}\n"
-            f"📅 距正賽：{days_left} 天"
+            f"🏁 Race time (Taiwan): {race_tw}\n"
+            f"📅 Days to race: {days_left}"
         )
     except Exception as e:
-        logger.error(f"cmd_status 錯誤：{e}")
-        await message.reply(f"❌ 取得狀態時發生錯誤：{e}")
+        logger.error(f"cmd_status 錯誤：{e}", exc_info=True)
+        await message.reply(f"❌ Failed to get status: {e}")
 
 
 async def cmd_next(message: discord.Message) -> None:
@@ -155,7 +157,7 @@ async def cmd_next(message: discord.Message) -> None:
         upcoming = get_upcoming_meetings(meetings)
 
         if not upcoming:
-            await message.reply("⚠️ 目前沒有即將到來的大獎賽。")
+            await message.reply("⚠️ No upcoming Grand Prix found.")
             return
 
         next_meeting = upcoming[0]
@@ -163,8 +165,92 @@ async def cmd_next(message: discord.Message) -> None:
         await message.channel.send(embed=embed)
 
     except Exception as e:
-        logger.error(f"cmd_next 錯誤：{e}")
-        await message.reply(f"❌ 發生錯誤：{e}")
+        logger.error(f"cmd_next 錯誤：{e}", exc_info=True)
+        await message.reply(f"❌ Failed: {e}")
+
+
+async def cmd_drivers(message: discord.Message) -> None:
+    """顯示最新車手積分榜。"""
+    try:
+        standings = fetch_driver_standings()
+        if not standings:
+            await message.reply("⚠️ Could not fetch drivers' standings.")
+            return
+
+        embed = discord.Embed(
+            title="🏆 2026 Drivers' Standings",
+            color=discord.Color.red(),
+        )
+
+        lines = []
+        for s in standings[:10]:
+            pts = int(s.points) if float(s.points).is_integer() else s.points
+            lines.append(
+                f"**P{s.position}** {s.full_name} — {pts} pts ｜{s.team_name}"
+            )
+
+        embed.description = "\n".join(lines)
+        embed.set_footer(text="F1 Taiwan Bot")
+        await message.channel.send(embed=embed)
+
+    except Exception as e:
+        logger.error(f"cmd_drivers 錯誤：{e}", exc_info=True)
+        await message.reply(f"❌ Failed to get drivers' standings: {e}")
+
+
+async def cmd_constructors(message: discord.Message) -> None:
+    """顯示最新車隊積分榜。"""
+    try:
+        standings = fetch_team_standings()
+        if not standings:
+            await message.reply("⚠️ Could not fetch constructors' standings.")
+            return
+
+        embed = discord.Embed(
+            title="🏗️ 2026 Teams' Standings",
+            color=discord.Color.blue(),
+        )
+
+        lines = []
+        for s in standings[:10]:
+            pts = int(s.points) if float(s.points).is_integer() else s.points
+            lines.append(f"**P{s.position}** {s.team_name} — {pts} pts")
+
+        embed.description = "\n".join(lines)
+        embed.set_footer(text="F1 Taiwan Bot")
+        await message.channel.send(embed=embed)
+
+    except Exception as e:
+        logger.error(f"cmd_constructors 錯誤：{e}", exc_info=True)
+        await message.reply(f"❌ Failed to get constructors' standings: {e}")
+
+
+async def cmd_results(message: discord.Message) -> None:
+    """顯示本季各站正賽冠軍。"""
+    try:
+        results = fetch_race_results_history()
+        if not results:
+            await message.reply("⚠️ Could not fetch race results.")
+            return
+
+        embed = discord.Embed(
+            title="🏁 2026 Race Results",
+            color=discord.Color.gold(),
+        )
+
+        lines = []
+        for r in results:
+            lines.append(
+                f"**{r['grand_prix']}** — {r['winner']} ｜{r['team']}"
+            )
+
+        embed.description = "\n".join(lines[:20])
+        embed.set_footer(text="F1 Taiwan Bot")
+        await message.channel.send(embed=embed)
+
+    except Exception as e:
+        logger.error(f"cmd_results 錯誤：{e}", exc_info=True)
+        await message.reply(f"❌ Failed to get race results: {e}")
 
 
 async def cmd_force(message: discord.Message) -> None:
@@ -174,16 +260,15 @@ async def cmd_force(message: discord.Message) -> None:
         upcoming = get_upcoming_meetings(meetings)
 
         if not upcoming:
-            await message.reply("⚠️ 沒有即將到來的大獎賽。")
+            await message.reply("⚠️ No upcoming Grand Prix.")
             return
 
         next_meeting = upcoming[0]
         channel = client.get_channel(CHANNEL_ID)
         if channel is None:
-            await message.reply(f"❌ 找不到頻道 ID {CHANNEL_ID}")
+            await message.reply(f"❌ Channel ID {CHANNEL_ID} not found")
             return
 
-        # 先移除舊記錄，再強制發送
         sent_log = get_sent_log()
         from modules.sent_log import SentLog
         key = SentLog.pre_race_key(next_meeting.year, next_meeting.meeting_key)
@@ -191,13 +276,13 @@ async def cmd_force(message: discord.Message) -> None:
 
         success = await force_send_pre_race(channel, next_meeting)
         if success:
-            await message.reply(f"✅ 已強制發送：{next_meeting.meeting_name} 賽前通知")
+            await message.reply(f"✅ Force sent: {next_meeting.meeting_name}")
         else:
-            await message.reply("❌ 強制發送失敗，請查看 Log")
+            await message.reply("❌ Force send failed. Check logs.")
 
     except Exception as e:
-        logger.error(f"cmd_force 錯誤：{e}")
-        await message.reply(f"❌ 發生錯誤：{e}")
+        logger.error(f"cmd_force 錯誤：{e}", exc_info=True)
+        await message.reply(f"❌ Failed: {e}")
 
 
 async def cmd_log(message: discord.Message) -> None:
@@ -206,10 +291,10 @@ async def cmd_log(message: discord.Message) -> None:
     all_records = sent_log.get_all()
 
     if not all_records:
-        await message.reply("📋 目前沒有任何發送記錄。")
+        await message.reply("📋 No sent logs yet.")
         return
 
-    lines = [f"📋 **已發送記錄（共 {len(all_records)} 筆）**"]
+    lines = [f"📋 **Sent logs ({len(all_records)})**"]
     for key, value in list(all_records.items())[-15:]:
         lines.append(f"`{key}` → {value}")
 
@@ -248,7 +333,6 @@ async def check_loop_error(error: Exception) -> None:
 # ── 程式進入點 ────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # 驗證設定
     try:
         validate_config()
     except ValueError as e:
