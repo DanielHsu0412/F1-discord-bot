@@ -2,6 +2,9 @@
 modules/f1_data.py — 資料來源模組（Data Module）
 
 透過 OpenF1 API 取得 F1 賽程資料，整合為統一結構。
+站名會優先轉成中文版，例如：
+- 美國邁阿密大獎賽
+- 英國銀石大獎賽
 """
 
 import logging
@@ -39,6 +42,143 @@ SESSION_ORDER_WEIGHT: dict[str, int] = {
 
 # 需要發送「單場提醒」的 session 類型
 REMINDER_SESSIONS: set[str] = {"Qualifying", "Sprint Qualifying", "Sprint", "Race"}
+
+# ── 國家中文對照 ──────────────────────────────────────────────
+COUNTRY_ZH_MAP: dict[str, str] = {
+    "Australia": "澳洲",
+    "China": "中國",
+    "Japan": "日本",
+    "Bahrain": "巴林",
+    "Saudi Arabia": "沙烏地阿拉伯",
+    "United States": "美國",
+    "Italy": "義大利",
+    "Monaco": "摩納哥",
+    "Spain": "西班牙",
+    "Canada": "加拿大",
+    "Austria": "奧地利",
+    "United Kingdom": "英國",
+    "Belgium": "比利時",
+    "Hungary": "匈牙利",
+    "Netherlands": "荷蘭",
+    "Azerbaijan": "亞塞拜然",
+    "Singapore": "新加坡",
+    "Mexico": "墨西哥",
+    "Brazil": "巴西",
+    "Qatar": "卡達",
+    "United Arab Emirates": "阿拉伯聯合大公國",
+    "France": "法國",
+    "Germany": "德國",
+    "Portugal": "葡萄牙",
+    "Turkey": "土耳其",
+    "Russia": "俄羅斯",
+    "South Africa": "南非",
+    "Argentina": "阿根廷",
+    "Thailand": "泰國",
+}
+
+# ── 賽道 / 地點中文對照（優先決定站名特色）────────────────────
+CIRCUIT_ZH_MAP: dict[str, str] = {
+    "Albert Park": "墨爾本",
+    "Melbourne": "墨爾本",
+    "Shanghai": "上海",
+    "Suzuka": "鈴鹿",
+    "Sakhir": "薩基爾",
+    "Jeddah": "吉達",
+    "Miami": "邁阿密",
+    "Imola": "伊莫拉",
+    "Monaco": "蒙地卡羅",
+    "Catalunya": "加泰隆尼亞",
+    "Barcelona": "巴塞隆納",
+    "Montreal": "蒙特婁",
+    "Gilles Villeneuve": "蒙特婁",
+    "Spielberg": "斯皮爾堡",
+    "Red Bull Ring": "紅牛環",
+    "Silverstone": "銀石",
+    "Spa-Francorchamps": "斯帕",
+    "Hungaroring": "匈牙利站",
+    "Zandvoort": "贊德沃特",
+    "Monza": "蒙札",
+    "Baku": "巴庫",
+    "Marina Bay": "濱海灣",
+    "Singapore": "新加坡",
+    "Austin": "奧斯汀",
+    "COTA": "奧斯汀",
+    "Circuit of the Americas": "奧斯汀",
+    "Mexico City": "墨西哥城",
+    "Interlagos": "聖保羅",
+    "Sao Paulo": "聖保羅",
+    "São Paulo": "聖保羅",
+    "Las Vegas": "拉斯維加斯",
+    "Lusail": "路薩爾",
+    "Yas Marina": "亞斯碼頭",
+    "Madrid": "馬德里",
+    "Madring": "馬德里",
+    "Mugello": "穆傑羅",
+    "Portimao": "波爾蒂芒",
+    "Istanbul Park": "伊斯坦堡",
+    "Sepang": "雪邦",
+    "Hockenheim": "霍根海姆",
+    "Nürburgring": "紐柏林",
+    "Nurburgring": "紐柏林",
+    "Paul Ricard": "保羅里卡德",
+    "Kyalami": "凱拉米",
+}
+
+# 某些站名如果用 country + circuit 會顯得怪，直接用這裡覆蓋
+SPECIAL_MEETING_NAME_MAP: dict[tuple[str, str], str] = {
+    ("United States", "Miami"): "美國邁阿密大獎賽",
+    ("United States", "Austin"): "美國奧斯汀大獎賽",
+    ("United States", "Circuit of the Americas"): "美國奧斯汀大獎賽",
+    ("United States", "COTA"): "美國奧斯汀大獎賽",
+    ("United States", "Las Vegas"): "美國拉斯維加斯大獎賽",
+    ("United Kingdom", "Silverstone"): "英國銀石大獎賽",
+    ("Italy", "Monza"): "義大利蒙札大獎賽",
+    ("Saudi Arabia", "Jeddah"): "沙烏地阿拉伯吉達大獎賽",
+    ("United Arab Emirates", "Yas Marina"): "阿布達比亞斯碼頭大獎賽",
+    ("Spain", "Barcelona"): "西班牙巴塞隆納大獎賽",
+    ("Spain", "Catalunya"): "西班牙加泰隆尼亞大獎賽",
+    ("Canada", "Montreal"): "加拿大蒙特婁大獎賽",
+    ("Belgium", "Spa-Francorchamps"): "比利時斯帕大獎賽",
+    ("Brazil", "Interlagos"): "巴西聖保羅大獎賽",
+    ("Brazil", "São Paulo"): "巴西聖保羅大獎賽",
+    ("Brazil", "Sao Paulo"): "巴西聖保羅大獎賽",
+    ("Qatar", "Lusail"): "卡達路薩爾大獎賽",
+    ("Monaco", "Monaco"): "摩納哥大獎賽",
+}
+
+# 從 official name 裡面抓可能的地名關鍵字
+OFFICIAL_NAME_KEYWORD_MAP: dict[str, str] = {
+    "MIAMI": "邁阿密",
+    "BRITISH": "英國",
+    "SILVERSTONE": "銀石",
+    "JAPANESE": "日本",
+    "SUZUKA": "鈴鹿",
+    "BAHRAIN": "巴林",
+    "SAUDI": "沙烏地阿拉伯",
+    "JEDDAH": "吉達",
+    "AUSTRALIAN": "澳洲",
+    "CHINESE": "中國",
+    "MONACO": "摩納哥",
+    "SPANISH": "西班牙",
+    "CANADIAN": "加拿大",
+    "AUSTRIAN": "奧地利",
+    "BELGIAN": "比利時",
+    "HUNGARIAN": "匈牙利",
+    "DUTCH": "荷蘭",
+    "ITALIAN": "義大利",
+    "AZERBAIJAN": "亞塞拜然",
+    "SINGAPORE": "新加坡",
+    "UNITED STATES": "美國",
+    "MEXICO CITY": "墨西哥城",
+    "MEXICAN": "墨西哥",
+    "SAO PAULO": "聖保羅",
+    "SÃO PAULO": "聖保羅",
+    "LAS VEGAS": "拉斯維加斯",
+    "QATAR": "卡達",
+    "ABU DHABI": "阿布達比",
+    "YAS MARINA": "亞斯碼頭",
+    "MADRID": "馬德里",
+}
 
 
 @dataclass
@@ -135,48 +275,116 @@ def _fetch_json(url: str, params: dict | None = None) -> Optional[list]:
     return None
 
 
-def _clean_meeting_name(
-    meeting_name: Optional[str],
-    meeting_official_name: Optional[str],
+def _normalize_text(value: Optional[str]) -> str:
+    return (value or "").strip()
+
+
+def _translate_country(country_name: Optional[str]) -> str:
+    country = _normalize_text(country_name)
+    return COUNTRY_ZH_MAP.get(country, country)
+
+
+def _translate_circuit(circuit_short_name: Optional[str]) -> str:
+    circuit = _normalize_text(circuit_short_name)
+    return CIRCUIT_ZH_MAP.get(circuit, circuit)
+
+
+def _extract_name_from_official_name(official_name: Optional[str]) -> str:
+    """
+    從官方長名稱中抓可用的中文地名或站名關鍵字。
+    例如：
+    FORMULA 1 CRYPTO.COM MIAMI GRAND PRIX 2026
+    -> 邁阿密大獎賽
+    """
+    official = _normalize_text(official_name).upper()
+    if not official:
+        return ""
+
+    official = re.sub(r"\s+\d{4}$", "", official).strip()
+
+    for keyword, zh_name in OFFICIAL_NAME_KEYWORD_MAP.items():
+        if keyword in official:
+            # 如果是國家名關鍵字，就直接輸出「XX大獎賽」
+            if zh_name in COUNTRY_ZH_MAP.values():
+                return f"{zh_name}大獎賽"
+            return f"{zh_name}大獎賽"
+
+    # 萬一都抓不到，就試著抓 "... GRAND PRIX"
+    match = re.search(r"([A-Z][A-Z\s]+?)\s+GRAND PRIX", official)
+    if match:
+        raw_name = match.group(1).strip().title()
+        return f"{raw_name} 大獎賽"
+
+    return ""
+
+
+def _build_chinese_meeting_name(
     country_name: Optional[str],
     circuit_short_name: Optional[str],
+    meeting_name: Optional[str],
+    meeting_official_name: Optional[str],
 ) -> str:
     """
-    優先使用 meeting_name。
-    如果沒有，就退回 meeting_official_name。
-    再不行才退回 country / circuit。
+    建立中文版站名，優先產出你要的格式：
+    - 美國邁阿密大獎賽
+    - 英國銀石大獎賽
     """
-    name = (meeting_name or "").strip()
-    official = (meeting_official_name or "").strip()
-    country = (country_name or "").strip()
-    circuit = (circuit_short_name or "").strip()
+    country_en = _normalize_text(country_name)
+    circuit_en = _normalize_text(circuit_short_name)
 
-    if name:
-        return name
+    # 1. 特例優先
+    special = SPECIAL_MEETING_NAME_MAP.get((country_en, circuit_en))
+    if special:
+        return special
 
-    if official:
-        # 去掉尾端年份，例如 "... GRAND PRIX 2026"
-        official = re.sub(r"\s+\d{4}$", "", official).strip()
+    # 2. 一般 country + circuit 組法
+    country_zh = _translate_country(country_en)
+    circuit_zh = _translate_circuit(circuit_en)
 
-        # 如果是全大寫，稍微轉好看一點
-        if official.isupper():
-            official = official.title()
+    if country_zh and circuit_zh:
+        # 避免像「摩納哥摩納哥大獎賽」這種重複
+        if country_zh == circuit_zh:
+            return f"{country_zh}大獎賽"
+        return f"{country_zh}{circuit_zh}大獎賽"
 
-        return official
+    # 3. 若有 session/meeting name，可嘗試轉中文但這通常是英文短名
+    cleaned_meeting_name = _normalize_text(meeting_name)
+    if cleaned_meeting_name:
+        # 常見 "Miami Grand Prix" 這種
+        lower_name = cleaned_meeting_name.lower()
 
-    if country:
-        return f"{country} GP"
+        for circuit_key, circuit_zh_value in CIRCUIT_ZH_MAP.items():
+            if circuit_key.lower() in lower_name and country_zh:
+                if country_zh == circuit_zh_value:
+                    return f"{country_zh}大獎賽"
+                return f"{country_zh}{circuit_zh_value}大獎賽"
 
-    if circuit:
-        return f"{circuit} GP"
+        for country_key, country_zh_value in COUNTRY_ZH_MAP.items():
+            if country_key.lower() in lower_name:
+                return f"{country_zh_value}大獎賽"
 
-    return "Unknown GP"
+    # 4. 再從 official name 抽關鍵字
+    official_guess = _extract_name_from_official_name(meeting_official_name)
+    if official_guess:
+        # 如果 official_guess 只有地名，且 country_zh 存在，補成「國家 + 地名」
+        if country_zh and not official_guess.startswith(country_zh):
+            raw = official_guess.replace("大獎賽", "").strip()
+            if raw and raw != country_zh:
+                return f"{country_zh}{raw}大獎賽"
+        return official_guess
+
+    # 5. 最後 fallback
+    if country_zh:
+        return f"{country_zh}大獎賽"
+    if circuit_zh:
+        return f"{circuit_zh}大獎賽"
+
+    return "未知大獎賽"
 
 
 def fetch_meetings_meta_for_year(year: int) -> dict[int, dict]:
     """
     取得年度 meetings 資料，建立 meeting_key -> metadata 對照表。
-    這樣就算 sessions 缺少 meeting_name，也能補回正確站名。
     """
     data = _fetch_json(f"{OPENF1_BASE_URL}/meetings", params={"year": year})
     if data is None:
@@ -192,13 +400,15 @@ def fetch_meetings_meta_for_year(year: int) -> dict[int, dict]:
         country_name = raw.get("country_name", "") or ""
         circuit_short_name = raw.get("circuit_short_name", "") or ""
 
+        meeting_name_zh = _build_chinese_meeting_name(
+            country_name=country_name,
+            circuit_short_name=circuit_short_name,
+            meeting_name=raw.get("meeting_name"),
+            meeting_official_name=raw.get("meeting_official_name"),
+        )
+
         meetings_meta[meeting_key] = {
-            "meeting_name": _clean_meeting_name(
-                raw.get("meeting_name"),
-                raw.get("meeting_official_name"),
-                country_name,
-                circuit_short_name,
-            ),
+            "meeting_name": meeting_name_zh,
             "country_name": country_name,
             "circuit_short_name": circuit_short_name,
         }
@@ -222,6 +432,7 @@ def fetch_sessions_for_year(year: int) -> list[F1Session]:
     for raw in data:
         session_name = raw.get("session_name", "")
 
+        # 過濾掉測試賽
         if "testing" in session_name.lower() or "pre-season" in session_name.lower():
             continue
 
@@ -235,16 +446,15 @@ def fetch_sessions_for_year(year: int) -> list[F1Session]:
         country_name = raw.get("country_name") or meta.get("country_name", "")
         circuit_short_name = raw.get("circuit_short_name") or meta.get("circuit_short_name", "")
 
-        resolved_meeting_name = _clean_meeting_name(
-            raw.get("meeting_name"),
-            raw.get("meeting_official_name"),
-            country_name,
-            circuit_short_name,
+        resolved_meeting_name = _build_chinese_meeting_name(
+            country_name=country_name,
+            circuit_short_name=circuit_short_name,
+            meeting_name=raw.get("meeting_name"),
+            meeting_official_name=raw.get("meeting_official_name"),
         )
 
-        # 如果 sessions 這邊還是沒有，就用 meetings endpoint 補
-        if resolved_meeting_name == "Unknown GP":
-            resolved_meeting_name = meta.get("meeting_name", "Unknown GP")
+        if resolved_meeting_name == "未知大獎賽":
+            resolved_meeting_name = meta.get("meeting_name", "未知大獎賽")
 
         sessions.append(F1Session(
             session_key=raw.get("session_key", 0),
@@ -281,10 +491,9 @@ def group_sessions_into_meetings(sessions: list[F1Session]) -> list[F1Meeting]:
                 year=session.year,
             )
         else:
-            # 若前面拿到 Unknown GP，後面有更好的名字就補上
             if (
-                meetings_map[mk].meeting_name == "Unknown GP"
-                and session.meeting_name != "Unknown GP"
+                meetings_map[mk].meeting_name in ("Unknown GP", "未知大獎賽")
+                and session.meeting_name not in ("Unknown GP", "未知大獎賽")
             ):
                 meetings_map[mk].meeting_name = session.meeting_name
 
