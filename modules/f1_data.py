@@ -4,8 +4,6 @@ modules/f1_data.py — Data module for F1 Taiwan Bot
 功能：
 - 取得當年度賽程
 - 取得下一站資訊
-- 取得最新 Drivers' Standings
-- 取得最新 Constructors' Standings
 - 取得本季各站 Race winners
 """
 
@@ -42,7 +40,7 @@ SESSION_ORDER_WEIGHT: dict[str, int] = {
 
 REMINDER_SESSIONS: set[str] = {"Qualifying", "Sprint Qualifying", "Sprint", "Race"}
 
-# ── 中文 GP 名稱對照（你前面要的格式）────────────────────────
+# ── 中文 GP 名稱對照 ─────────────────────────────────────────
 SPECIAL_MEETING_NAME_MAP: dict[tuple[str, str], str] = {
     ("United States", "Miami"): "美國邁阿密大獎賽",
     ("United States", "Austin"): "美國奧斯汀大獎賽",
@@ -132,22 +130,6 @@ class F1Meeting:
 
     def sessions_needing_reminder(self) -> list[F1Session]:
         return [s for s in self.sorted_sessions if s.needs_reminder]
-
-
-@dataclass
-class DriverStanding:
-    position: int
-    points: float
-    driver_number: int
-    full_name: str
-    team_name: str
-
-
-@dataclass
-class TeamStanding:
-    position: int
-    points: float
-    team_name: str
 
 
 @dataclass
@@ -272,127 +254,12 @@ def get_upcoming_meetings(meetings: list[F1Meeting]) -> list[F1Meeting]:
     return [m for m in meetings if m.race_session and m.race_session.date_start > now]
 
 
-def _get_latest_completed_race_session(year: Optional[int] = None) -> Optional[F1Session]:
-    if year is None:
-        year = datetime.now(tz=timezone.utc).year
-
-    sessions = fetch_sessions_for_year(year)
-    if not sessions:
-        return None
-
-    now = datetime.now(tz=timezone.utc)
-    race_sessions = [s for s in sessions if s.session_name == "Race" and s.date_start <= now]
-    if not race_sessions:
-        return None
-
-    race_sessions.sort(key=lambda s: s.date_start, reverse=True)
-    return race_sessions[0]
-
-
-def fetch_driver_standings(year: Optional[int] = None) -> list[DriverStanding]:
-    latest_race = _get_latest_completed_race_session(year)
-    if latest_race is None:
-        logger.warning("沒有已完成的正賽，無法取得 drivers standings")
-        return []
-
-    session_key = latest_race.session_key
-    logger.info(
-        f"[drivers standings] 使用 session_key={session_key}, "
-        f"meeting={latest_race.meeting_name}, "
-        f"race_start={latest_race.date_start.isoformat()}"
-    )
-
-    standings_raw = _fetch_json(
-        f"{OPENF1_BASE_URL}/championship_drivers",
-        params={"session_key": session_key}
-    )
-
-    logger.info(f"[drivers standings] championship_drivers raw type={type(standings_raw).__name__}")
-    logger.info(f"[drivers standings] championship_drivers raw={standings_raw}")
-
-    if not standings_raw:
-        logger.warning("[drivers standings] championship_drivers 回傳空資料")
-        return []
-
-    drivers_raw = _fetch_json(
-        f"{OPENF1_BASE_URL}/drivers",
-        params={"session_key": session_key}
-    ) or []
-
-    logger.info(f"[drivers standings] drivers raw count={len(drivers_raw)}")
-    if drivers_raw:
-        logger.info(f"[drivers standings] first driver sample={drivers_raw[0]}")
-
-    driver_map: dict[int, dict] = {
-        int(d.get("driver_number", 0)): d for d in drivers_raw
-    }
-
-    standings: list[DriverStanding] = []
-    for row in standings_raw:
-        driver_number = int(row.get("driver_number", 0))
-        info = driver_map.get(driver_number, {})
-
-        full_name = info.get("full_name") or f"Driver #{driver_number}"
-        team_name = info.get("team_name") or "Unknown Team"
-
-        standings.append(DriverStanding(
-            position=int(row.get("position_current", 999)),
-            points=float(row.get("points_current", 0)),
-            driver_number=driver_number,
-            full_name=full_name,
-            team_name=team_name,
-        ))
-
-    standings.sort(key=lambda x: x.position)
-    logger.info(f"[drivers standings] parsed standings count={len(standings)}")
-    return standings
-
-
-def fetch_team_standings(year: Optional[int] = None) -> list[TeamStanding]:
-    latest_race = _get_latest_completed_race_session(year)
-    if latest_race is None:
-        logger.warning("沒有已完成的正賽，無法取得 constructors standings")
-        return []
-
-    session_key = latest_race.session_key
-    logger.info(
-        f"[constructors standings] 使用 session_key={session_key}, "
-        f"meeting={latest_race.meeting_name}, "
-        f"race_start={latest_race.date_start.isoformat()}"
-    )
-
-    standings_raw = _fetch_json(
-        f"{OPENF1_BASE_URL}/championship_teams",
-        params={"session_key": session_key}
-    )
-
-    logger.info(f"[constructors standings] championship_teams raw type={type(standings_raw).__name__}")
-    logger.info(f"[constructors standings] championship_teams raw={standings_raw}")
-
-    if not standings_raw:
-        logger.warning("[constructors standings] championship_teams 回傳空資料")
-        return []
-
-    standings: list[TeamStanding] = []
-    for row in standings_raw:
-        standings.append(TeamStanding(
-            position=int(row.get("position_current", 999)),
-            points=float(row.get("points_current", 0)),
-            team_name=row.get("team_name", "Unknown Team"),
-        ))
-
-    standings.sort(key=lambda x: x.position)
-    logger.info(f"[constructors standings] parsed standings count={len(standings)}")
-    return standings
-
-
 def fetch_race_results_history(year: Optional[int] = None) -> list[RaceResult]:
     if year is None:
         year = datetime.now(tz=timezone.utc).year
 
     meetings = get_current_year_meetings()
     now = datetime.now(tz=timezone.utc)
-
     results: list[RaceResult] = []
 
     for meeting in meetings:

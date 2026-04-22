@@ -32,8 +32,6 @@ from modules.scheduler import check_and_send_notifications, force_send_pre_race,
 from modules.f1_data import (
     get_current_year_meetings,
     get_upcoming_meetings,
-    fetch_driver_standings,
-    fetch_team_standings,
     fetch_race_results_history,
 )
 from modules.embed_builder import build_pre_race_embed
@@ -113,8 +111,8 @@ async def cmd_help(message: discord.Message) -> None:
         "**F1 Taiwan Bot Commands**\n"
         "`!f1 status`        — Show next race info\n"
         "`!f1 next`          — Preview next race weekend embed\n"
-        "`!f1 drivers`       — Show latest drivers' standings\n"
-        "`!f1 constructors`  — Show latest constructors' standings\n"
+        "`!f1 drivers`       — Open official drivers' standings\n"
+        "`!f1 constructors`  — Open official constructors' standings\n"
         "`!f1 teams`         — Same as constructors\n"
         "`!f1 results`       — Show 2026 race winners so far\n"
         "`!f1 force`         — Force send next race notification (admin)\n"
@@ -205,7 +203,7 @@ async def cmd_results(message: discord.Message) -> None:
         lines = []
         for r in results:
             lines.append(
-                f"**{r.grand_prix}** — {r.winner} ｜{r.team}"
+                f"**{r.grand_prix}** ({r.date_label}) — {r.winner} ｜{r.team}"
             )
 
         embed.description = "\n".join(lines[:20])
