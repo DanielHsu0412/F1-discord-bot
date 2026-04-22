@@ -194,7 +194,7 @@ class F1MainMenu(View):
     emoji=discord.PartialEmoji(name="5277trophywordchampionshipf1", id=1496450240490770493),
     custom_id="f1_menu_drivers",
 )
-async def drivers(self, interaction: discord.Interaction, button: Button):
+    async def drivers(self, interaction: discord.Interaction, button: Button):
     await interaction.response.defer()
     await send_drivers_link_to_channel(interaction.channel)
     await send_main_menu(interaction.channel)
@@ -205,7 +205,7 @@ async def drivers(self, interaction: discord.Interaction, button: Button):
     emoji="⚔️",
     custom_id="f1_menu_teams",
 )
-async def teams(self, interaction: discord.Interaction, button: Button):
+    async def teams(self, interaction: discord.Interaction, button: Button):
     await interaction.response.defer()
     await send_constructors_link_to_channel(interaction.channel)
     await send_main_menu(interaction.channel)
