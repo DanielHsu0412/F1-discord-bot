@@ -167,9 +167,9 @@ class F1MainMenu(View):
         super().__init__(timeout=None)
 
     @discord.ui.button(
-        label="Next Race",
+        label="Race Time",
         style=discord.ButtonStyle.green,
-        emoji="🔜",
+        emoji="🕑",
         custom_id="f1_menu_next_race",
     )
     async def next_race(self, interaction: discord.Interaction, button: Button):
@@ -178,7 +178,7 @@ class F1MainMenu(View):
         await send_main_menu(interaction.channel)
 
     @discord.ui.button(
-        label="Results",
+        label="Race Results",
         style=discord.ButtonStyle.blurple,
         emoji="🏁",
         custom_id="f1_menu_results",
@@ -189,9 +189,9 @@ class F1MainMenu(View):
         await send_main_menu(interaction.channel)
 
     @discord.ui.button(
-        label="Drivers",
-        style=discord.ButtonStyle.secondary,
-        emoji="📊",
+        label="Drivers' Standings",
+        style=discord.ButtonStyle.blurple,
+        emoji="emoji=discord.PartialEmoji(name=":5277trophywordchampionshipf1:", id=1496450240490770493)",
         custom_id="f1_menu_drivers",
     )
     async def drivers(self, interaction: discord.Interaction, button: Button):
@@ -200,9 +200,9 @@ class F1MainMenu(View):
         await send_main_menu(interaction.channel)
 
     @discord.ui.button(
-        label="Teams",
-        style=discord.ButtonStyle.secondary,
-        emoji="🏎️",
+        label="Teams' Standings",
+        style=discord.ButtonStyle.blurple,
+        emoji="emoji=discord.PartialEmoji(name=":cross_swords:", id=1496452156662747137)",
         custom_id="f1_menu_teams",
     )
     async def teams(self, interaction: discord.Interaction, button: Button):
@@ -210,21 +210,21 @@ class F1MainMenu(View):
         await send_constructors_link_to_channel(interaction.channel)
         await send_main_menu(interaction.channel)
 
-    @discord.ui.button(
-        label="Race Info",
-        style=discord.ButtonStyle.danger,
-        emoji="📍",
-        custom_id="f1_menu_race_info",
-    )
-    async def race_info(self, interaction: discord.Interaction, button: Button):
-        await interaction.response.defer()
-        await interaction.channel.send("🚧 Race Information selector coming soon.")
-        await send_main_menu(interaction.channel)
+    #@discord.ui.button(
+        #label="Race Info",
+       # style=discord.ButtonStyle.danger,
+      #  emoji="emoji=discord.PartialEmoji(name=":1720f1logo:", 1496453403931574312)",
+     #   custom_id="f1_menu_race_info",
+    #)
+    #async def race_info(self, interaction: discord.Interaction, button: Button):
+     #   await interaction.response.defer()
+    #    await interaction.channel.send("🚧 Race Information selector coming soon.")
+   #     await send_main_menu(interaction.channel) 
 
     @discord.ui.button(
-        label="Status",
-        style=discord.ButtonStyle.primary,
-        emoji="ℹ️",
+        label="Upcoming Race",
+        style=discord.ButtonStyle.blurple,
+        emoji="🔜",
         row=1,
         custom_id="f1_menu_status",
     )
@@ -245,37 +245,8 @@ class F1MainMenu(View):
         await send_help_to_channel(interaction.channel)
         await send_main_menu(interaction.channel)
 
-    @discord.ui.button(
-        label="Force Notify",
-        style=discord.ButtonStyle.danger,
-        emoji="⚠️",
-        row=1,
-        custom_id="f1_menu_force_notify",
-    )
-    async def force_notify(self, interaction: discord.Interaction, button: Button):
-        if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("❌ This button is admin only.", ephemeral=True)
-            return
-
-        await interaction.response.defer()
-        await force_send_command_to_channel(interaction.channel)
-        await send_main_menu(interaction.channel)
-
-    @discord.ui.button(
-        label="Show Logs",
-        style=discord.ButtonStyle.secondary,
-        emoji="📋",
-        row=1,
-        custom_id="f1_menu_show_logs",
-    )
-    async def show_logs(self, interaction: discord.Interaction, button: Button):
-        if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("❌ This button is admin only.", ephemeral=True)
-            return
-
-        await interaction.response.defer()
-        await send_logs_to_channel(interaction.channel)
-        await send_main_menu(interaction.channel)
+    # 👇 這兩個功能先保留但不顯示（已移除按鈕）
+    # Force Notify / Show Logs 還是可以用 !f1 force / !f1 log
 
 
 # ── Bot 事件處理 ──────────────────────────────────────────────
