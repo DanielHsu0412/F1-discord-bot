@@ -202,7 +202,7 @@ class F1MainMenu(View):
     @discord.ui.button(
         label="Teams' Standings",
         style=discord.ButtonStyle.blurple,
-        emoji="<:cross_swords:", id=1496452156662747137>",
+        emoji="<:cross_swords:=1496452156662747137>",
         custom_id="f1_menu_teams",
     )
     async def teams(self, interaction: discord.Interaction, button: Button):
