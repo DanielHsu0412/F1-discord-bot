@@ -195,9 +195,9 @@ class F1MainMenu(View):
     custom_id="f1_menu_drivers",
 )
     async def drivers(self, interaction: discord.Interaction, button: Button):
-    await interaction.response.defer()
-    await send_drivers_link_to_channel(interaction.channel)
-    await send_main_menu(interaction.channel)
+        await interaction.response.defer()
+        await send_drivers_link_to_channel(interaction.channel)
+        await send_main_menu(interaction.channel)
 
 @discord.ui.button(
     label="Teams' Standings",
@@ -206,9 +206,9 @@ class F1MainMenu(View):
     custom_id="f1_menu_teams",
 )
     async def teams(self, interaction: discord.Interaction, button: Button):
-    await interaction.response.defer()
-    await send_constructors_link_to_channel(interaction.channel)
-    await send_main_menu(interaction.channel)
+        await interaction.response.defer()
+        await send_constructors_link_to_channel(interaction.channel)
+        await send_main_menu(interaction.channel)
 
     #@discord.ui.button(
         #label="Race Info",
