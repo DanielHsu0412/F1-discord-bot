@@ -189,37 +189,26 @@ class F1MainMenu(View):
         await send_main_menu(interaction.channel)
 
     @discord.ui.button(
-    label="Drivers' Standings",
-    style=discord.ButtonStyle.blurple,
-    emoji=discord.PartialEmoji(name="5277trophywordchampionshipf1", id=1496450240490770493),
-    custom_id="f1_menu_drivers",
-)
+        label="Drivers' Standings",
+        style=discord.ButtonStyle.blurple,
+        emoji=discord.PartialEmoji(name="5277trophywordchampionshipf1", id=1496450240490770493),
+        custom_id="f1_menu_drivers",
+    )
     async def drivers(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         await send_drivers_link_to_channel(interaction.channel)
         await send_main_menu(interaction.channel)
 
-@discord.ui.button(
-    label="Teams' Standings",
-    style=discord.ButtonStyle.blurple,
-    emoji="⚔️",
-    custom_id="f1_menu_teams",
-)
+    @discord.ui.button(
+        label="Teams' Standings",
+        style=discord.ButtonStyle.blurple,
+        emoji=discord.PartialEmoji(name="cross_swords", id=1496452156662747137),
+        custom_id="f1_menu_teams",
+    )
     async def teams(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         await send_constructors_link_to_channel(interaction.channel)
         await send_main_menu(interaction.channel)
-
-    #@discord.ui.button(
-        #label="Race Info",
-       # style=discord.ButtonStyle.danger,
-      #  emoji="emoji=discord.PartialEmoji(name=":1720f1logo:", 1496453403931574312)",
-     #   custom_id="f1_menu_race_info",
-    #)
-    #async def race_info(self, interaction: discord.Interaction, button: Button):
-     #   await interaction.response.defer()
-    #    await interaction.channel.send("🚧 Race Information selector coming soon.")
-   #     await send_main_menu(interaction.channel) 
 
     @discord.ui.button(
         label="Upcoming Race",
