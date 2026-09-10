@@ -1,7 +1,14 @@
 #  F1 Taiwan Info Discord Bot
 
-自動整合 Formula 1 賽事資訊，以**台灣時間（GMT+8）**在 Discord 頻道發佈清晰易讀的 Embed 公告，專為台灣車迷設計。
+自動整合 Formula 1 賽事資訊，以台灣時間（GMT+8)在 Discord 頻道發佈Embed 公告，專為台灣車迷設計。
+## Demo
 
+### Race Time
+點擊 Race Time 後，自動取得並顯示完整賽事週末資訊。
+<img width="734" height="579" alt="螢幕擷取畫面 2026-09-10 181913" src="https://github.com/user-attachments/assets/66bc9028-3af3-4dd0-92e0-b0335822eff8" />
+### Race Results
+點擊 Race Results 後，自動取得各站冠軍與車隊資訊。
+<img width="682" height="327" alt="螢幕擷取畫面 2026-09-10 182016" src="https://github.com/user-attachments/assets/132ca9f5-3b3a-4a23-a64c-8eed27aaef99" />
 ---
 
 ##  功能
@@ -21,12 +28,12 @@ The bot originally used text-based commands for user interaction.
 To improve usability and reduce the need to memorize commands,
 the interface was redesigned using Discord interactive buttons.
 
-- 🕒 Race Time — Display the complete schedule for the race weekend
-- 🏁 Race Results — Retrieve race winners and constructors
-- 🏆 Drivers' Standings — View current driver standings
-- ⚔️ Teams' Standings — View current constructor standings
-- ➡️ Upcoming Race — View the next race
-- ❓ Help — Display available functions
+-  Race Time — Display the complete schedule for the race weekend
+-  Race Results — Retrieve race winners and constructors
+-  Drivers' Standings — View current driver standings
+-  Teams' Standings — View current constructor standings
+-  Upcoming Race — View the next race
+-  Help — Display available functions
 
 After each interaction, the button menu is automatically displayed again,
 allowing users to continue using the bot without entering additional commands.
