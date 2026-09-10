@@ -15,7 +15,21 @@
 |  **防重複發送** | 記錄已發送通知，重啟後自動恢復 |
 
 ---
+## Interactive Button UI
 
+The bot originally used text-based commands for user interaction.
+To improve usability and reduce the need to memorize commands,
+the interface was redesigned using Discord interactive buttons.
+
+- 🕒 Race Time — Display the complete schedule for the race weekend
+- 🏁 Race Results — Retrieve race winners and constructors
+- 🏆 Drivers' Standings — View current driver standings
+- ⚔️ Teams' Standings — View current constructor standings
+- ➡️ Upcoming Race — View the next race
+- ❓ Help — Display available functions
+
+After each interaction, the button menu is automatically displayed again,
+allowing users to continue using the bot without entering additional commands.
 ##  專案結構
 
 ```
